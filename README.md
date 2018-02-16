@@ -28,9 +28,12 @@ Activate the env
     
     activate ampad-env
 
-Install the packages we need
-    
-    pip install -r requirements.txt
+Clone and install the btr package
+
+    git clone https://github.com/pvtodorov/btr.git
+    cd btr
+    pip install -e .
+
 
 ## Wrangle data
 The datasets used by the analyses in this repository can be easily downloaded using command-line scripts. To download Mount Sinai Brain Bank (MSBB) dataset, run the following on the command line:
@@ -49,27 +52,37 @@ This will be repeated at least 10,000 times.
 
 To perform this, run the `predict_background.py` script in the command line.
 The script will run for the specified number of repetitions and dump a csv file
-for each one.
+for each one. The optional `-i` tag tells the script how many times to repeat.
 
-    python predict_background.py <settings.json> <number of repetitions>
+    btr-predict <settings.json> -i <number of repetitions>
 
 
-## Aggregate background runs
-The repeated predictions will need to be aggregated into a single file.
+## Score background runs
+The repeated predictions will need to be aggregated into a single file and their
+AUCs will be computed.
 
-    python aggregate_predictions <settings.json>
+    btr-score <settings.json>
 
 
 ## Predict the preformance of gene sets
 To predict the performance of a gene set, obtain the necessary .gmt file or
 create a folder with .txt files which contain gene sets formatted as HGNC ID on
-each line. These can then be supplied to the `predict_set.py` script as follows:
+each line. These can then be supplied to the `btr-predict` as follows:
 
-    python predict_set.py <settings.json> <path to gmt file or folder of txts>
+    btr-predict <settings.json> -g <path to gmt file or folder of txts>
 
-This will output a csv file with the name `scores_<gmt_file or folder suffix>.csv`
+The predictions will need to be scored
+
+    btr-score <settings.json> -g <path to gmt file or folder of txts>
+
+The output of `btr-score` can be supplied to `btr-stats` to compute whether a
+particular gene set is producing predictions that are statistically better than
+the random background distribution of predictions.
+
+    btr-stats <settings.json> -g <path to gmt file or folder of txts>
+
 The output will contain an identifier for the set, a description, the number of genes
 in the set, the number of genes which were actually used (if there is incomplete
-overlap between the dataset and the gene set not all genes are used), the R2 value,
-the p_value, and an Benjamini-Hochberg adjusted p_value.
+overlap between the dataset and the gene set not all genes are used), the
+R-squared value, the p_value, and an Benjamini-Hochberg adjusted p_value.
 
