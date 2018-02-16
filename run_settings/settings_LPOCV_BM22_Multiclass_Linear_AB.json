@@ -3,9 +3,12 @@
                "filepath": "~/Data/AMP-AD/MSBB/msbb-wrangled.tsv",
                "meta_columns": ["ID", "PMI", "AOD", "CDR", "Braak", "BrodmannArea", "Barcode"],
                "target": "Braak",
-               "ID_column": "ID"
+               "ID_column": "ID",
+               "filter": {"name": "AB",
+                          "filters": [{"column": "Braak", "values": [0, 1, 2, 3, 4]}]
+                         }
               },
-    "estimator": {"name": "Ordinal",
+    "estimator": {"name": "Multiclass_Linear",
                   "estimator_params":{}
                  },
     "processing_scheme": {"name": "LPOCV",

@@ -1,7 +1,7 @@
 {
     "dataset":{"name": "MSBB_RNAseq",
                "filepath": "~/Data/AMP-AD/MSBB/msbb-wrangled.tsv",
-               "meta_columns": ["ID", "CDR", "Braak", "BrodmannArea", "Barcode"],
+               "meta_columns": ["ID", "PMI", "AOD", "CDR", "Braak", "BrodmannArea", "Barcode"],
                "target": "Braak",
                "ID_column": "ID"
               },
