@@ -1,4 +1,4 @@
-## Wrangling of MSBB RNAseq data an matching clinical covariates
+## Wrangling of MSBB RNAseq data and matching clinical covariates
 ##
 ## by Artem Sokolov
 
@@ -22,7 +22,6 @@ if( length(argv) == 0 )
     local.dir <- "/data/AMP-AD/MSBB"
 } else { local.dir <- argv[1] }
 
-
 ## Create directory if it doesn't exist
 dir.create( local.dir, showWarnings=FALSE )
 cat( "Wrangling MSBB dataset to", local.dir, "\n" )
@@ -38,16 +37,17 @@ cat( "Loading local copy...\n" )
 Xraw <- read.delim( fnX, check.names=FALSE )
 
 ## Map Gene IDs to HUGO
-## Remove alternative splice forms and duplicated entries
-## NOTE: There are only 42 genes with duplicate entries
-##   If there were more, the correct approach would be to average their expression
-##   across the duplicates, rather than dropping.
+## Remove alternative splice forms, non-coding RNA and duplicated entries
+## There are only 10 duplicates after removing non-coding transcripts
 ## Retrieve the sample barcode
 cat( "Mapping gene IDs to HUGO...\n" )
 E2H <- ens2hugo()
+f <- function( x, pattern ) { filter( x, !grepl(pattern, HUGO) ) }
 X <- Xraw %>% rownames_to_column( "ENSEMBL" ) %>% inner_join( E2H, ., by="ENSEMBL" ) %>%
-    filter( !grepl( "\\.", HUGO ) ) %>% filter( !duplicated(HUGO) ) %>%
-    select( -ENSEMBL ) %>% gather( barcode, Value, -HUGO )
+    filter( !grepl( "\\.", HUGO ) )%>% filter( !(HUGO %in% c("Y_RNA", "Metazoa_SRP")) ) %>%
+    f( "^MIR" ) %>% f( "^RNU" ) %>% f( "^SNOR" ) %>% f( "^U[1-9]$" ) %>%
+    f( "^SCARNA" ) %>% f( "^sno" ) %>% f( "^LINC" ) %>% f( "-AS[1-9]$" ) %>%
+    filter( !duplicated(HUGO) ) %>% select( -ENSEMBL ) %>% gather( barcode, Value, -HUGO )
 
 ## Match sample barcodes against individual IDs and brain region information
 cat( "Annotating samples with brain region...\n" )
@@ -59,14 +59,14 @@ XZ <- suppressMessages( read_csv(fnZ) ) %>%
 ## Load clinical covariates and combine with the expression matrix
 cat( "Downloading clinical covariates...\n" )
 fnY <- synGet( "syn6101474", downloadLocation = local.dir )@filePath
-XY <- suppressMessages( read_csv( fnY ) ) %>% select( individualIdentifier, CDR, bbscore ) %>%
+XY <- suppressMessages( read_csv( fnY ) ) %>% select( individualIdentifier, PMI, AOD, CDR, bbscore ) %>%
     inner_join( XZ, by = "individualIdentifier" )
 
 ## Flatten the matrix to samples-by-(clin+genes) and save to file
 cat( "Finalizing...\n" )
 RR <- spread( XY, HUGO, Value ) %>%
     rename( ID = individualIdentifier, Braak = bbscore, Barcode = barcode )
-fnOut <- file.path( local.dir, "msbb-wrangled.tsv" )
+fnOut <- file.path( local.dir, "msbb-wrangled.tsv.gz" )
 cat( "Writing output to", fnOut, "\n" )
 write_tsv( RR, fnOut )
 
